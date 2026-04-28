@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>ADA Home</title>
+
+  <meta name="theme-color" content="#2f6b3f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="ADA Home" />
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="app">
+
+    <header class="topbar">
+      <div>
+        <h1>ADA Home</h1>
+        <p>Gestione quotidiana della famiglia</p>
+      </div>
+      <div class="family-badge">
+        Andrea · Daniela · Antonio
+      </div>
+    </header>
+
+    <main>
+
+      <section class="dashboard">
+        <div class="card highlight">
+          <h2>Oggi</h2>
+          <p id="todayDate"></p>
+          <div class="quick-stats">
+            <div>
+              <strong id="urgentCount">0</strong>
+              <span>Urgenti</span>
+            </div>
+            <div>
+              <strong id="shoppingCount">0</strong>
+              <span>Spesa</span>
+            </div>
+            <div>
+              <strong id="expenseTotal">0 €</strong>
+              <span>Spese mese</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="tabs">
+        <button class="tab active" data-section="spesa">Spesa</button>
+        <button class="tab" data-section="faccende">Faccende</button>
+        <button class="tab" data-section="scadenze">Scadenze</button>
+        <button class="tab" data-section="spese">Spese</button>
+        <button class="tab" data-section="note">Note</button>
+      </nav>
+
+      <section id="spesa" class="section active">
+        <div class="card">
+          <h2>Lista spesa</h2>
+
+          <div class="form-grid">
+            <input id="shoppingName" type="text" placeholder="Prodotto" />
+            <select id="shoppingCategory">
+              <option>Alimentari</option>
+              <option>Casa</option>
+              <option>Farmacia</option>
+              <option>Altro</option>
+            </select>
+            <select id="shoppingPerson">
+              <option>Andrea</option>
+              <option>Daniela</option>
+              <option>Antonio</option>
+            </select>
+            <button onclick="addShoppingItem()">Aggiungi</button>
+          </div>
+
+          <div id="shoppingList" class="list"></div>
+        </div>
+      </section>
+
+      <section id="faccende" class="section">
+        <div class="card">
+          <h2>Faccende di casa</h2>
+
+          <div class="form-grid">
+            <input id="taskTitle" type="text" placeholder="Attività" />
+            <select id="taskPerson">
+              <option>Andrea</option>
+              <option>Daniela</option>
+              <option>Antonio</option>
+            </select>
+            <select id="taskPriority">
+              <option value="verde">🟢 Normale</option>
+              <option value="giallo">🟡 Importante</option>
+              <option value="rosso">🔴 Urgente</option>
+            </select>
+            <input id="taskDate" type="date" />
+            <button onclick="addTask()">Aggiungi</button>
+          </div>
+
+          <div id="taskList" class="list"></div>
+        </div>
+      </section>
+
+      <section id="scadenze" class="section">
+        <div class="card">
+          <h2>Scadenze</h2>
+
+          <div class="form-grid">
+            <input id="deadlineTitle" type="text" placeholder="Titolo scadenza" />
+            <select id="deadlineType">
+              <option>Bolletta</option>
+              <option>Assicurazione</option>
+              <option>Documento</option>
+              <option>Manutenzione</option>
+              <option>Visita</option>
+              <option>Altro</option>
+            </select>
+            <input id="deadlineDate" type="date" />
+            <select id="deadlinePerson">
+              <option>Andrea</option>
+              <option>Daniela</option>
+              <option>Antonio</option>
+            </select>
+            <select id="deadlinePriority">
+              <option value="verde">🟢 Normale</option>
+              <option value="giallo">🟡 Importante</option>
+              <option value="rosso">🔴 Urgente</option>
+            </select>
+            <button onclick="addDeadline()">Aggiungi</button>
+          </div>
+
+          <div id="deadlineList" class="list"></div>
+        </div>
+      </section>
+
+      <section id="spese" class="section">
+        <div class="card">
+          <h2>Spese familiari</h2>
+
+          <div class="form-grid">
+            <input id="expenseTitle" type="text" placeholder="Descrizione" />
+            <input id="expenseAmount" type="number" step="0.01" placeholder="Importo €" />
+            <select id="expenseCategory">
+              <option>Casa</option>
+              <option>Spesa</option>
+              <option>Auto</option>
+              <option>Salute</option>
+              <option>Tempo libero</option>
+              <option>Altro</option>
+            </select>
+            <select id="expensePerson">
+              <option>Andrea</option>
+              <option>Daniela</option>
+              <option>Antonio</option>
+            </select>
+            <button onclick="addExpense()">Aggiungi</button>
+          </div>
+
+          <div id="expenseList" class="list"></div>
+        </div>
+      </section>
+
+      <section id="note" class="section">
+        <div class="card">
+          <h2>Note casa</h2>
+
+          <div class="form-grid">
+            <input id="noteTitle" type="text" placeholder="Titolo nota" />
+            <textarea id="noteText" placeholder="Scrivi una nota..."></textarea>
+            <button onclick="addNote()">Aggiungi nota</button>
+          </div>
+
+          <div id="noteList" class="list"></div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
