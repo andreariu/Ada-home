@@ -6,184 +6,146 @@
 
   <title>ADA Home</title>
 
-  <meta name="theme-color" content="#2f6b3f" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="ADA Home" />
-
-  <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
+
+  <meta name="theme-color" content="#2f6b3f" />
 </head>
 
 <body>
   <div class="app">
 
-    <header class="topbar">
-      <div>
-        <h1>ADA Home</h1>
-        <p>Gestione quotidiana della famiglia</p>
-      </div>
-      <div class="family-badge">
-        Andrea · Daniela · Antonio
-      </div>
+    <header class="hero">
+      <h1>ADA Home</h1>
+      <p>Gestione quotidiana della famiglia</p>
+      <span>Andrea · Daniela · Antonio</span>
     </header>
 
-    <main>
+    <!-- LOGIN -->
+    <section id="loginBox" class="card">
+      <h2>Accesso famiglia</h2>
+      <p class="muted">Accedi per sincronizzare i dati tra tutti i dispositivi.</p>
 
-      <section class="dashboard">
-        <div class="card highlight">
-          <h2>Oggi</h2>
-          <p id="todayDate"></p>
-          <div class="quick-stats">
-            <div>
-              <strong id="urgentCount">0</strong>
-              <span>Urgenti</span>
-            </div>
-            <div>
-              <strong id="shoppingCount">0</strong>
-              <span>Spesa</span>
-            </div>
-            <div>
-              <strong id="expenseTotal">0 €</strong>
-              <span>Spese mese</span>
-            </div>
+      <input id="emailInput" type="email" placeholder="Email" autocomplete="email" />
+      <input id="passwordInput" type="password" placeholder="Password" autocomplete="current-password" />
+
+      <button id="loginBtn">Accedi</button>
+
+      <p id="loginError" class="error"></p>
+    </section>
+
+    <!-- APP -->
+    <main id="mainApp" style="display: none;">
+
+      <section class="card today">
+        <h2>Oggi</h2>
+        <p id="todayDate"></p>
+
+        <div class="stats">
+          <div>
+            <strong id="urgentCount">0</strong>
+            <span>Urgenti</span>
+          </div>
+          <div>
+            <strong id="shoppingCount">0</strong>
+            <span>Spesa</span>
+          </div>
+          <div>
+            <strong id="monthExpenses">0.00 €</strong>
+            <span>Spese mese</span>
           </div>
         </div>
       </section>
 
       <nav class="tabs">
-        <button class="tab active" data-section="spesa">Spesa</button>
-        <button class="tab" data-section="faccende">Faccende</button>
-        <button class="tab" data-section="scadenze">Scadenze</button>
-        <button class="tab" data-section="spese">Spese</button>
-        <button class="tab" data-section="note">Note</button>
+        <button class="tab active" data-tab="spesa">Spesa</button>
+        <button class="tab" data-tab="faccende">Faccende</button>
+        <button class="tab" data-tab="scadenze">Scadenze</button>
+        <button class="tab" data-tab="spese">Spese</button>
+        <button class="tab" data-tab="note">Note</button>
       </nav>
 
-      <section id="spesa" class="section active">
-        <div class="card">
-          <h2>Lista spesa</h2>
-
-          <div class="form-grid">
-            <input id="shoppingName" type="text" placeholder="Prodotto" />
-            <select id="shoppingCategory">
-              <option>Alimentari</option>
-              <option>Casa</option>
-              <option>Farmacia</option>
-              <option>Altro</option>
-            </select>
-            <select id="shoppingPerson">
-              <option>Andrea</option>
-              <option>Daniela</option>
-              <option>Antonio</option>
-            </select>
-            <button onclick="addShoppingItem()">Aggiungi</button>
-          </div>
-
-          <div id="shoppingList" class="list"></div>
-        </div>
+      <!-- SPESA -->
+      <section id="spesa" class="panel active card">
+        <h2>Lista della spesa</h2>
+        <input id="shoppingText" type="text" placeholder="Cosa manca in casa?" />
+        <select id="shoppingPerson">
+          <option>Andrea</option>
+          <option>Daniela</option>
+          <option>Antonio</option>
+        </select>
+        <button id="addShoppingBtn">Aggiungi</button>
+        <div id="shoppingList" class="list"></div>
       </section>
 
-      <section id="faccende" class="section">
-        <div class="card">
-          <h2>Faccende di casa</h2>
-
-          <div class="form-grid">
-            <input id="taskTitle" type="text" placeholder="Attività" />
-            <select id="taskPerson">
-              <option>Andrea</option>
-              <option>Daniela</option>
-              <option>Antonio</option>
-            </select>
-            <select id="taskPriority">
-              <option value="verde">🟢 Normale</option>
-              <option value="giallo">🟡 Importante</option>
-              <option value="rosso">🔴 Urgente</option>
-            </select>
-            <input id="taskDate" type="date" />
-            <button onclick="addTask()">Aggiungi</button>
-          </div>
-
-          <div id="taskList" class="list"></div>
-        </div>
+      <!-- FACCENDE -->
+      <section id="faccende" class="panel card">
+        <h2>Faccende di casa</h2>
+        <input id="choreText" type="text" placeholder="Attività da fare" />
+        <select id="chorePerson">
+          <option>Andrea</option>
+          <option>Daniela</option>
+          <option>Antonio</option>
+        </select>
+        <button id="addChoreBtn">Aggiungi</button>
+        <div id="choreList" class="list"></div>
       </section>
 
-      <section id="scadenze" class="section">
-        <div class="card">
-          <h2>Scadenze</h2>
-
-          <div class="form-grid">
-            <input id="deadlineTitle" type="text" placeholder="Titolo scadenza" />
-            <select id="deadlineType">
-              <option>Bolletta</option>
-              <option>Assicurazione</option>
-              <option>Documento</option>
-              <option>Manutenzione</option>
-              <option>Visita</option>
-              <option>Altro</option>
-            </select>
-            <input id="deadlineDate" type="date" />
-            <select id="deadlinePerson">
-              <option>Andrea</option>
-              <option>Daniela</option>
-              <option>Antonio</option>
-            </select>
-            <select id="deadlinePriority">
-              <option value="verde">🟢 Normale</option>
-              <option value="giallo">🟡 Importante</option>
-              <option value="rosso">🔴 Urgente</option>
-            </select>
-            <button onclick="addDeadline()">Aggiungi</button>
-          </div>
-
-          <div id="deadlineList" class="list"></div>
-        </div>
+      <!-- SCADENZE -->
+      <section id="scadenze" class="panel card">
+        <h2>Scadenze</h2>
+        <input id="deadlineText" type="text" placeholder="Descrizione scadenza" />
+        <input id="deadlineDate" type="date" />
+        <select id="deadlinePerson">
+          <option>Andrea</option>
+          <option>Daniela</option>
+          <option>Antonio</option>
+        </select>
+        <button id="addDeadlineBtn">Aggiungi</button>
+        <div id="deadlineList" class="list"></div>
       </section>
 
-      <section id="spese" class="section">
-        <div class="card">
-          <h2>Spese familiari</h2>
-
-          <div class="form-grid">
-            <input id="expenseTitle" type="text" placeholder="Descrizione" />
-            <input id="expenseAmount" type="number" step="0.01" placeholder="Importo €" />
-            <select id="expenseCategory">
-              <option>Casa</option>
-              <option>Spesa</option>
-              <option>Auto</option>
-              <option>Salute</option>
-              <option>Tempo libero</option>
-              <option>Altro</option>
-            </select>
-            <select id="expensePerson">
-              <option>Andrea</option>
-              <option>Daniela</option>
-              <option>Antonio</option>
-            </select>
-            <button onclick="addExpense()">Aggiungi</button>
-          </div>
-
-          <div id="expenseList" class="list"></div>
-        </div>
+      <!-- SPESE -->
+      <section id="spese" class="panel card">
+        <h2>Spese familiari</h2>
+        <input id="expenseText" type="text" placeholder="Descrizione" />
+        <input id="expenseAmount" type="number" placeholder="Importo €" step="0.01" />
+        <select id="expenseCategory">
+          <option>Casa</option>
+          <option>Spesa</option>
+          <option>Auto</option>
+          <option>Bollette</option>
+          <option>Salute</option>
+          <option>Altro</option>
+        </select>
+        <select id="expensePerson">
+          <option>Andrea</option>
+          <option>Daniela</option>
+          <option>Antonio</option>
+        </select>
+        <button id="addExpenseBtn">Aggiungi</button>
+        <div id="expenseList" class="list"></div>
       </section>
 
-      <section id="note" class="section">
-        <div class="card">
-          <h2>Note casa</h2>
-
-          <div class="form-grid">
-            <input id="noteTitle" type="text" placeholder="Titolo nota" />
-            <textarea id="noteText" placeholder="Scrivi una nota..."></textarea>
-            <button onclick="addNote()">Aggiungi nota</button>
-          </div>
-
-          <div id="noteList" class="list"></div>
-        </div>
+      <!-- NOTE -->
+      <section id="note" class="panel card">
+        <h2>Note famiglia</h2>
+        <textarea id="noteText" placeholder="Scrivi una nota"></textarea>
+        <select id="notePerson">
+          <option>Andrea</option>
+          <option>Daniela</option>
+          <option>Antonio</option>
+        </select>
+        <button id="addNoteBtn">Aggiungi</button>
+        <div id="noteList" class="list"></div>
       </section>
+
+      <button id="logoutBtn" class="secondary">Esci</button>
 
     </main>
 
   </div>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
