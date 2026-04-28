@@ -1,0 +1,11 @@
+{
+  "name": "ADA Home",
+  "short_name": "ADA Home",
+  "description": "App familiare per la gestione quotidiana della casa",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f7f5",
+  "theme_color": "#2f6b3f",
+  "orientation": "portrait-primary",
+  "lang": "it-IT"
+}
