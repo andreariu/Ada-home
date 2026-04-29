@@ -1,5 +1,5 @@
-/* ADA Home - app.js completo corretto
-   Firebase + login + semaforo + dashboard + calendario + notifiche
+/* ADA Home - app.js completo
+   Firebase + login + semaforo + dashboard + calendario + notifiche base
 */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
@@ -23,17 +23,17 @@ import {
 
 /* =========================================================
    CONFIG FIREBASE
-   Se questi valori sono già corretti nel tuo vecchio app.js,
-   lasciali uguali.
+   ATTENZIONE: qui devi mettere i valori reali Firebase.
+   Non lasciare INCOLLA_...
 ========================================================= */
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBE-xO9I0i0eR86SHsDX91SBU6dbvjMITo",
+  apiKey: "INCOLLA_LA_TUA_API_KEY",
   authDomain: "ada-home-4db14.firebaseapp.com",
   projectId: "ada-home-4db14",
   storageBucket: "ada-home-4db14.firebasestorage.app",
-  messagingSenderId: "908315649480",
-  appId: "1:908315649480:web:5a2549a291a259f15d0cfd"
+  messagingSenderId: "INCOLLA_MESSAGING_SENDER_ID",
+  appId: "INCOLLA_APP_ID"
 };
 
 /* =========================================================
@@ -48,12 +48,20 @@ let currentUser = null;
 let allItems = [];
 let unsubscribeData = null;
 let activeTab = "dashboard";
-let calendarCursor = new Date();
 
 const FAMILY = ["Andrea", "Daniela", "Antonio"];
 
+const TYPES = {
+  spesa: "Spesa",
+  faccende: "Faccende",
+  scadenze: "Scadenze",
+  spese: "Spese",
+  note: "Note",
+  calendario: "Calendario"
+};
+
 /* =========================================================
-   CSS APP
+   CSS
 ========================================================= */
 
 function injectCss() {
@@ -68,6 +76,10 @@ function injectCss() {
       box-sizing: border-box;
     }
 
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -77,16 +89,16 @@ function injectCss() {
     }
 
     .ada-wrap {
-      width: min(900px, calc(100% - 28px));
+      width: min(860px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 26px 0 70px;
+      padding: 26px 0 56px;
     }
 
     .hero {
       background: linear-gradient(135deg, #2f7d46, #14532d);
       color: white;
       border-radius: 28px;
-      padding: 28px;
+      padding: 30px;
       box-shadow: 0 18px 36px rgba(0,0,0,.14);
       margin-bottom: 18px;
     }
@@ -98,9 +110,9 @@ function injectCss() {
     }
 
     .hero p {
-      margin: 0 0 10px;
+      margin: 0 0 14px;
       opacity: .92;
-      font-size: 17px;
+      font-size: 18px;
     }
 
     .family-pill {
@@ -110,12 +122,18 @@ function injectCss() {
       background: rgba(255,255,255,.15);
       border: 1px solid rgba(255,255,255,.24);
       font-size: 15px;
-      margin-top: 8px;
+      margin-bottom: 12px;
     }
 
-    .logout {
-      margin-top: 18px;
-      width: auto;
+    .top-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .mini-btn {
       min-height: 42px;
       padding: 0 16px;
       border-radius: 999px;
@@ -123,6 +141,12 @@ function injectCss() {
       color: white;
       border: 1px solid rgba(255,255,255,.28);
       font-weight: 800;
+      cursor: pointer;
+    }
+
+    .mini-text {
+      font-size: 13px;
+      opacity: .9;
     }
 
     .card {
@@ -147,6 +171,7 @@ function injectCss() {
     .muted {
       color: #6b7280;
       font-size: 14px;
+      line-height: 1.4;
     }
 
     input,
@@ -182,15 +207,10 @@ function injectCss() {
       cursor: pointer;
     }
 
-    .btn.secondary {
-      background: #e8f3ec;
-      color: #166534;
-      border: 1px solid #c8e6d1;
-    }
-
     .btn:active,
     .tab:active,
-    .delete:active {
+    .delete:active,
+    .mini-btn:active {
       transform: scale(.98);
     }
 
@@ -223,6 +243,7 @@ function injectCss() {
       overflow-x: auto;
       padding: 4px 0 14px;
       margin-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
     }
 
     .tab {
@@ -300,7 +321,7 @@ function injectCss() {
     .semaforo {
       position: absolute;
       left: 18px;
-      top: 18px;
+      top: 19px;
       width: 22px;
       height: 22px;
       border-radius: 50%;
@@ -322,7 +343,6 @@ function injectCss() {
     .badge {
       display: inline-block;
       margin-top: 8px;
-      margin-right: 6px;
       padding: 5px 10px;
       border-radius: 999px;
       font-size: 13px;
@@ -344,122 +364,81 @@ function injectCss() {
       color: #991b1b;
     }
 
-    .dashboard-person {
-      border-left: 6px solid #2f7d46;
-    }
-
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-      margin-top: 12px;
-    }
-
-    .dash-box {
-      background: #f8faf8;
-      border: 1px solid #e5ece6;
-      border-radius: 16px;
-      padding: 14px;
-    }
-
-    .dash-box strong {
-      font-size: 22px;
-      color: #2f7d46;
-    }
-
-    .notif {
-      border-left: 6px solid #ef4444;
-      background: #fff7f7;
-    }
-
-    .calendar-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .calendar-head button {
-      width: 44px;
-      height: 44px;
-      border: none;
-      border-radius: 14px;
-      background: #e8f3ec;
-      color: #166534;
-      font-size: 24px;
-      font-weight: 900;
-    }
-
-    .calendar-head strong {
-      font-size: 21px;
-      text-transform: capitalize;
-    }
-
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-    }
-
-    .day-name {
-      text-align: center;
-      font-size: 12px;
-      color: #6b7280;
-      font-weight: 900;
-      padding-bottom: 6px;
-    }
-
-    .day-cell {
-      min-height: 82px;
-      background: #f8faf8;
-      border: 1px solid #e5ece6;
-      border-radius: 14px;
-      padding: 8px;
-      overflow: hidden;
-    }
-
-    .day-cell.out {
-      opacity: .35;
-    }
-
-    .day-number {
-      font-weight: 900;
-      font-size: 14px;
-      margin-bottom: 5px;
-    }
-
-    .day-event {
-      display: block;
-      font-size: 11px;
-      line-height: 1.2;
-      padding: 4px 6px;
-      border-radius: 9px;
-      margin-top: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .day-event.verde {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .day-event.giallo {
-      background: #fef9c3;
-      color: #854d0e;
-    }
-
-    .day-event.rosso {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
     .error {
       color: #b42318;
       font-weight: 900;
       margin-top: 12px;
+      line-height: 1.4;
+    }
+
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .person-card {
+      border: 1px solid rgba(0,0,0,.07);
+      border-radius: 22px;
+      padding: 18px;
+      background: #fbfbfb;
+    }
+
+    .person-card h3 {
+      margin: 0 0 12px;
+    }
+
+    .priority-row {
+      display: grid;
+      grid-template-columns: 18px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0,0,0,.05);
+    }
+
+    .priority-row:last-child {
+      border-bottom: none;
+    }
+
+    .dot {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+    }
+
+    .type-list {
+      margin-top: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .type-chip {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 14px;
+      background: white;
+      border: 1px solid rgba(0,0,0,.06);
+      font-size: 14px;
+    }
+
+    .calendar-box {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .date-range {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #eef6ee;
+      color: #14532d;
+      font-size: 13px;
+      font-weight: 800;
     }
 
     @media (min-width: 700px) {
@@ -467,31 +446,12 @@ function injectCss() {
         grid-template-columns: repeat(4, 1fr);
       }
 
-      .dashboard-grid {
+      .dash-grid {
         grid-template-columns: repeat(3, 1fr);
       }
-    }
 
-    @media (max-width: 520px) {
-      .hero h1 {
-        font-size: 32px;
-      }
-
-      .card {
-        padding: 20px;
-      }
-
-      .calendar-grid {
-        gap: 4px;
-      }
-
-      .day-cell {
-        min-height: 68px;
-        padding: 5px;
-      }
-
-      .day-event {
-        font-size: 10px;
+      .calendar-box {
+        grid-template-columns: 1fr 1fr;
       }
     }
   `;
@@ -534,21 +494,30 @@ function renderLogin(errorMessage = "") {
         <h2>Accesso famiglia</h2>
         <p class="muted">Accedi per sincronizzare i dati tra tutti i dispositivi.</p>
 
-        <input id="loginEmail" type="email" placeholder="Email">
-        <input id="loginPassword" type="password" placeholder="Password">
+        <input id="loginEmail" type="email" placeholder="Email" autocomplete="email">
+        <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
 
         <button class="btn" id="loginBtn">Accedi</button>
 
         ${errorMessage ? `<div class="error">${escapeHtml(errorMessage)}</div>` : ""}
+
+        <p class="muted">
+          Se continua a dare errore, controlla che in Firebase sia attivo Email/password
+          e che il dominio andreariu.github.io sia autorizzato.
+        </p>
       </section>
     </main>
   `;
 
   document.getElementById("loginBtn").addEventListener("click", login);
+
+  document.getElementById("loginPassword").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") login();
+  });
 }
 
 async function login() {
-  const email = document.getElementById("loginEmail").value.trim();
+  const email = document.getElementById("loginEmail").value.trim().toLowerCase();
   const password = document.getElementById("loginPassword").value;
 
   if (!email || !password) {
@@ -559,7 +528,8 @@ async function login() {
   try {
     await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
-    renderLogin("Accesso non riuscito. Controlla email e password.");
+    console.error("Errore login Firebase:", error);
+    renderLogin("Accesso non riuscito. Errore Firebase: " + error.code);
   }
 }
 
@@ -572,36 +542,56 @@ async function logout() {
 ========================================================= */
 
 function listenData() {
-  unsubscribeData = onSnapshot(collection(db, "adaHome"), (snapshot) => {
-    allItems = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...d.data()
-    }));
+  unsubscribeData = onSnapshot(
+    collection(db, "adaHome"),
+    (snapshot) => {
+      allItems = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data()
+      }));
 
-    allItems.sort((a, b) => {
-      const ad = a.createdAt?.seconds || 0;
-      const bd = b.createdAt?.seconds || 0;
-      return bd - ad;
-    });
+      allItems.sort((a, b) => {
+        const pa = priorityWeight(getStatus(a));
+        const pb = priorityWeight(getStatus(b));
 
-    renderApp();
-    checkBrowserNotifications(false);
-  }, () => {
-    renderApp("Errore lettura database. Controlla le regole Firebase.");
-  });
+        if (pa !== pb) return pb - pa;
+
+        const ad = a.createdAt?.seconds || 0;
+        const bd = b.createdAt?.seconds || 0;
+        return bd - ad;
+      });
+
+      renderApp();
+      checkCalendarNotifications();
+    },
+    (error) => {
+      console.error("Errore Firestore:", error);
+      renderApp("Errore database: " + error.code);
+    }
+  );
 }
 
 async function addItem(type, data) {
-  await addDoc(collection(db, "adaHome"), {
-    type,
-    ...data,
-    createdAt: serverTimestamp(),
-    createdBy: currentUser?.email || ""
-  });
+  try {
+    await addDoc(collection(db, "adaHome"), {
+      type,
+      ...data,
+      createdAt: serverTimestamp(),
+      createdBy: currentUser?.email || ""
+    });
+  } catch (error) {
+    console.error("Errore inserimento:", error);
+    alert("Errore inserimento: " + error.code);
+  }
 }
 
 async function removeItem(id) {
-  await deleteDoc(doc(db, "adaHome", id));
+  try {
+    await deleteDoc(doc(db, "adaHome", id));
+  } catch (error) {
+    console.error("Errore eliminazione:", error);
+    alert("Errore eliminazione: " + error.code);
+  }
 }
 
 /* =========================================================
@@ -611,24 +601,23 @@ async function removeItem(id) {
 function renderApp(errorMessage = "") {
   injectCss();
 
-  const shopping = allItems.filter(x => x.type === "spesa");
-  const chores = allItems.filter(x => x.type === "faccende");
-  const deadlines = allItems.filter(x => x.type === "scadenze");
-  const calendar = allItems.filter(x => x.type === "calendario");
-  const expenses = allItems.filter(x => x.type === "spese");
-  const notes = allItems.filter(x => x.type === "note");
+  const shopping = byType("spesa");
+  const chores = byType("faccende");
+  const deadlines = byType("scadenze");
+  const expenses = byType("spese");
+  const notes = byType("note");
+  const calendar = byType("calendario");
 
-  const activityItems = [...shopping, ...chores, ...deadlines, ...calendar];
+  const priorityItems = allItems.filter(x =>
+    ["spesa", "faccende", "scadenze", "calendario"].includes(x.type)
+  );
 
-  const urgentCount = activityItems.filter(x => getStatus(x) === "rosso").length;
-
-  const importantCount = activityItems.filter(x => getStatus(x) === "giallo").length;
+  const urgentCount = priorityItems.filter(x => getStatus(x) === "rosso").length;
+  const yellowCount = priorityItems.filter(x => getStatus(x) === "giallo").length;
 
   const expensesTotal = expenses.reduce((sum, x) => {
     return sum + Number(x.amount || 0);
   }, 0);
-
-  const today = new Date();
 
   document.body.innerHTML = `
     <main class="ada-wrap">
@@ -636,8 +625,12 @@ function renderApp(errorMessage = "") {
         <h1>ADA Home</h1>
         <p>Gestione quotidiana della famiglia</p>
         <span class="family-pill">Andrea · Daniela · Antonio</span>
-        <br>
-        <button class="logout" id="logoutBtn">Esci</button>
+
+        <div class="top-row">
+          <button class="mini-btn" id="notifyBtn">Attiva notifiche</button>
+          <button class="mini-btn" id="logoutBtn">Esci</button>
+          <span class="mini-text">${escapeHtml(currentUser?.email || "")}</span>
+        </div>
       </section>
 
       ${errorMessage ? `<section class="card error">${escapeHtml(errorMessage)}</section>` : ""}
@@ -648,7 +641,7 @@ function renderApp(errorMessage = "") {
           Urgenti
         </div>
         <div class="stat">
-          <strong>${importantCount}</strong>
+          <strong>${yellowCount}</strong>
           Importanti
         </div>
         <div class="stat">
@@ -657,28 +650,27 @@ function renderApp(errorMessage = "") {
         </div>
         <div class="stat">
           <strong>${formatMoney(expensesTotal)}</strong>
-          Spese mese
+          Spese
         </div>
       </section>
 
       <nav class="tabs">
-        <button class="tab ${activeTab === "dashboard" ? "active" : ""}" data-tab="dashboard">Dashboard</button>
-        <button class="tab ${activeTab === "spesa" ? "active" : ""}" data-tab="spesa">Spesa</button>
-        <button class="tab ${activeTab === "faccende" ? "active" : ""}" data-tab="faccende">Faccende</button>
-        <button class="tab ${activeTab === "scadenze" ? "active" : ""}" data-tab="scadenze">Scadenze</button>
-        <button class="tab ${activeTab === "calendario" ? "active" : ""}" data-tab="calendario">Calendario</button>
-        <button class="tab ${activeTab === "spese" ? "active" : ""}" data-tab="spese">Spese</button>
-        <button class="tab ${activeTab === "note" ? "active" : ""}" data-tab="note">Note</button>
+        ${tabButton("dashboard", "Dashboard")}
+        ${tabButton("spesa", "Spesa")}
+        ${tabButton("faccende", "Faccende")}
+        ${tabButton("scadenze", "Scadenze")}
+        ${tabButton("calendario", "Calendario")}
+        ${tabButton("spese", "Spese")}
+        ${tabButton("note", "Note")}
       </nav>
 
-      <section class="card panel ${activeTab === "dashboard" ? "active" : ""}" id="panel-dashboard">
-        <h2>Dashboard famiglia</h2>
-        <p class="muted">Riepilogo attività divise per persona, tipologia e urgenza.</p>
-        ${renderNotifications(deadlines, calendar)}
-        ${renderDashboard(activityItems)}
+      <section class="card panel ${panelClass("dashboard")}" id="panel-dashboard">
+        <h2>Dashboard urgenze</h2>
+        <p class="muted">Qui vedi cosa deve fare ogni persona, diviso per urgenza e tipologia.</p>
+        ${renderDashboard()}
       </section>
 
-      <section class="card panel ${activeTab === "spesa" ? "active" : ""}" id="panel-spesa">
+      <section class="card panel ${panelClass("spesa")}" id="panel-spesa">
         <h2>Lista della spesa</h2>
         <input id="shoppingText" placeholder="Cosa manca in casa?">
         ${personSelect("shoppingPerson")}
@@ -687,18 +679,18 @@ function renderApp(errorMessage = "") {
         <div>${renderItems(shopping)}</div>
       </section>
 
-      <section class="card panel ${activeTab === "faccende" ? "active" : ""}" id="panel-faccende">
-        <h2>Faccende di casa</h2>
-        <input id="choreText" placeholder="Es. Pulire cucina, buttare immondizia">
+      <section class="card panel ${panelClass("faccende")}" id="panel-faccende">
+        <h2>Faccende</h2>
+        <input id="choreText" placeholder="Es. Pulire cucina, buttare spazzatura">
         ${personSelect("chorePerson")}
         ${prioritySelect("chorePriority")}
         <button class="btn" id="addChoreBtn">Aggiungi</button>
         <div>${renderItems(chores)}</div>
       </section>
 
-      <section class="card panel ${activeTab === "scadenze" ? "active" : ""}" id="panel-scadenze">
+      <section class="card panel ${panelClass("scadenze")}" id="panel-scadenze">
         <h2>Scadenze</h2>
-        <input id="deadlineText" placeholder="Es. Bolletta luce, assicurazione, visita">
+        <input id="deadlineText" placeholder="Es. Bolletta, assicurazione, pagamento">
         <input id="deadlineDate" type="date">
         ${personSelect("deadlinePerson")}
         ${prioritySelect("deadlinePriority")}
@@ -706,30 +698,25 @@ function renderApp(errorMessage = "") {
         <div>${renderItems(deadlines)}</div>
       </section>
 
-      <section class="card panel ${activeTab === "calendario" ? "active" : ""}" id="panel-calendario">
-        <h2>Calendario famiglia</h2>
-        <p class="muted">Inserisci impegni da data a data. Verranno mostrati anche nella Dashboard.</p>
+      <section class="card panel ${panelClass("calendario")}" id="panel-calendario">
+        <h2>Calendario</h2>
+        <p class="muted">Inserisci impegni da data a data. Le notifiche funzionano se il browser le consente e l’app viene aperta.</p>
 
-        <input id="calendarText" placeholder="Titolo impegno">
-        <input id="calendarStart" type="date" value="${todayDateString()}">
-        <input id="calendarEnd" type="date" value="${todayDateString()}">
+        <input id="calendarTitle" placeholder="Titolo impegno">
+        <div class="calendar-box">
+          <input id="calendarStart" type="date">
+          <input id="calendarEnd" type="date">
+        </div>
         ${personSelect("calendarPerson")}
         ${prioritySelect("calendarPriority")}
-        <textarea id="calendarNote" placeholder="Note facoltative"></textarea>
+        <textarea id="calendarNote" placeholder="Note opzionali"></textarea>
 
         <button class="btn" id="addCalendarBtn">Aggiungi impegno</button>
 
-        <div style="height:18px"></div>
-
-        ${renderCalendarGrid(calendar)}
-
-        <div style="height:18px"></div>
-
-        <h3>Impegni inseriti</h3>
-        <div>${renderItems(sortCalendar(calendar))}</div>
+        <div>${renderItems(calendar)}</div>
       </section>
 
-      <section class="card panel ${activeTab === "spese" ? "active" : ""}" id="panel-spese">
+      <section class="card panel ${panelClass("spese")}" id="panel-spese">
         <h2>Spese familiari</h2>
         <input id="expenseText" placeholder="Descrizione">
         <input id="expenseAmount" type="number" step="0.01" placeholder="Importo €">
@@ -745,7 +732,7 @@ function renderApp(errorMessage = "") {
         <div>${renderItems(expenses)}</div>
       </section>
 
-      <section class="card panel ${activeTab === "note" ? "active" : ""}" id="panel-note">
+      <section class="card panel ${panelClass("note")}" id="panel-note">
         <h2>Note</h2>
         <textarea id="noteText" placeholder="Scrivi una nota"></textarea>
         ${personSelect("notePerson")}
@@ -759,16 +746,17 @@ function renderApp(errorMessage = "") {
 }
 
 /* =========================================================
-   EVENTI UI
+   EVENTI
 ========================================================= */
 
 function bindEvents() {
   document.getElementById("logoutBtn").addEventListener("click", logout);
+  document.getElementById("notifyBtn").addEventListener("click", requestNotifications);
 
   document.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       activeTab = btn.dataset.tab;
-      activateTab(activeTab);
+      renderApp();
     });
   });
 
@@ -777,29 +765,6 @@ function bindEvents() {
       await removeItem(btn.dataset.delete);
     });
   });
-
-  const enableNotifBtn = document.getElementById("enableNotifBtn");
-  if (enableNotifBtn) {
-    enableNotifBtn.addEventListener("click", requestBrowserNotifications);
-  }
-
-  const prevMonth = document.getElementById("prevMonth");
-  if (prevMonth) {
-    prevMonth.addEventListener("click", () => {
-      calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1);
-      activeTab = "calendario";
-      renderApp();
-    });
-  }
-
-  const nextMonth = document.getElementById("nextMonth");
-  if (nextMonth) {
-    nextMonth.addEventListener("click", () => {
-      calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1);
-      activeTab = "calendario";
-      renderApp();
-    });
-  }
 
   document.getElementById("addShoppingBtn").addEventListener("click", async () => {
     const text = val("shoppingText");
@@ -836,25 +801,20 @@ function bindEvents() {
   });
 
   document.getElementById("addCalendarBtn").addEventListener("click", async () => {
-    const text = val("calendarText");
+    const text = val("calendarTitle");
     const startDate = val("calendarStart");
-    const endDate = val("calendarEnd");
+    const endDate = val("calendarEnd") || startDate;
 
-    if (!text || !startDate || !endDate) return;
-
-    const start = parseDateInput(startDate);
-    const end = parseDateInput(endDate);
-
-    if (end < start) {
-      alert("La data fine non può essere prima della data inizio.");
+    if (!text || !startDate) {
+      alert("Inserisci almeno titolo e data inizio.");
       return;
     }
 
     await addItem("calendario", {
       text,
+      person: val("calendarPerson"),
       startDate,
       endDate,
-      person: val("calendarPerson"),
       priority: val("calendarPriority"),
       note: val("calendarNote")
     });
@@ -885,326 +845,72 @@ function bindEvents() {
   });
 }
 
-function activateTab(tabName) {
-  document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
-  document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
-
-  const tab = document.querySelector(`[data-tab="${tabName}"]`);
-  const panel = document.getElementById(`panel-${tabName}`);
-
-  if (tab) tab.classList.add("active");
-  if (panel) panel.classList.add("active");
-}
-
 /* =========================================================
-   DASHBOARD
+   RENDER DASHBOARD
 ========================================================= */
 
-function renderDashboard(activityItems) {
-  if (!activityItems.length) {
-    return `<p class="muted">Nessuna attività presente.</p>`;
+function renderDashboard() {
+  const relevant = allItems.filter(x =>
+    ["spesa", "faccende", "scadenze", "calendario"].includes(x.type)
+  );
+
+  if (!relevant.length) {
+    return `<p class="muted">Nessuna attività inserita.</p>`;
   }
-
-  return FAMILY.map(person => {
-    const personItems = activityItems.filter(item => item.person === person);
-
-    const spesa = personItems.filter(item => item.type === "spesa");
-    const faccende = personItems.filter(item => item.type === "faccende");
-    const scadenze = personItems.filter(item => item.type === "scadenze");
-    const calendario = personItems.filter(item => item.type === "calendario");
-
-    const rosso = personItems.filter(item => getStatus(item) === "rosso");
-    const giallo = personItems.filter(item => getStatus(item) === "giallo");
-    const verde = personItems.filter(item => getStatus(item) === "verde");
-
-    return `
-      <div class="item dashboard-person">
-        <strong style="font-size:22px;">${escapeHtml(person)}</strong>
-        <small>Totale attività: <b>${personItems.length}</b></small>
-
-        <div style="margin-top:12px;">
-          <span class="badge rosso">Urgenti: ${rosso.length}</span>
-          <span class="badge giallo">Importanti: ${giallo.length}</span>
-          <span class="badge verde">Normali: ${verde.length}</span>
-        </div>
-
-        <div class="dashboard-grid">
-          <div class="dash-box">
-            <small>Spesa</small>
-            <strong>${spesa.length}</strong>
-          </div>
-          <div class="dash-box">
-            <small>Faccende</small>
-            <strong>${faccende.length}</strong>
-          </div>
-          <div class="dash-box">
-            <small>Scadenze</small>
-            <strong>${scadenze.length}</strong>
-          </div>
-          <div class="dash-box">
-            <small>Calendario</small>
-            <strong>${calendario.length}</strong>
-          </div>
-          <div class="dash-box">
-            <small>Rosso</small>
-            <strong>${rosso.length}</strong>
-          </div>
-          <div class="dash-box">
-            <small>Giallo</small>
-            <strong>${giallo.length}</strong>
-          </div>
-        </div>
-
-        <div style="margin-top:16px;">
-          <small><b>Dettaglio urgenze</b></small>
-          ${renderDashboardList(rosso, "rosso")}
-        </div>
-
-        <div style="margin-top:16px;">
-          <small><b>Dettaglio importanti</b></small>
-          ${renderDashboardList(giallo, "giallo")}
-        </div>
-
-        <div style="margin-top:16px;">
-          <small><b>Dettaglio normali</b></small>
-          ${renderDashboardList(verde, "verde")}
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-function renderDashboardList(items, status) {
-  if (!items.length) {
-    return `<small class="muted">Nessun elemento</small>`;
-  }
-
-  return items.map(item => {
-    return `
-      <div style="margin-top:8px; padding:10px 12px; background:#f8faf8; border-radius:12px; border:1px solid #e5ece6;">
-        <span class="badge ${status}">${getTypeLabel(item.type)}</span>
-        <small><b>${escapeHtml(item.text || "")}</b></small>
-        <small>${getExtraInfo(item)}</small>
-      </div>
-    `;
-  }).join("");
-}
-
-/* =========================================================
-   NOTIFICHE
-========================================================= */
-
-function renderNotifications(deadlines, calendar) {
-  const alerts = getNotificationItems(deadlines, calendar);
-
-  const permissionText = getNotificationPermissionText();
 
   return `
-    <div class="item notif">
-      <strong>Avvisi e notifiche</strong>
-      <small>${permissionText}</small>
-      <button class="btn secondary" id="enableNotifBtn">Attiva notifiche browser</button>
-      <div style="margin-top:12px;">
-        ${
-          alerts.length
-            ? alerts.map(a => `
-                <div style="margin-top:8px;">
-                  <span class="badge ${a.status}">${a.label}</span>
-                  <small><b>${escapeHtml(a.title)}</b></small>
-                  <small>${escapeHtml(a.message)}</small>
-                </div>
-              `).join("")
-            : `<small class="muted">Nessun avviso urgente.</small>`
-        }
-      </div>
+    <div class="dash-grid">
+      ${FAMILY.map(person => renderPersonDashboard(person, relevant)).join("")}
     </div>
   `;
 }
 
-function getNotificationItems(deadlines, calendar) {
-  const alerts = [];
+function renderPersonDashboard(person, items) {
+  const personItems = items.filter(x => x.person === person);
 
-  deadlines.forEach(item => {
-    const diff = daysUntil(item.deadline);
-    if (diff === null) return;
+  const red = personItems.filter(x => getStatus(x) === "rosso").length;
+  const yellow = personItems.filter(x => getStatus(x) === "giallo").length;
+  const green = personItems.filter(x => getStatus(x) === "verde").length;
 
-    if (diff <= 7) {
-      const status = diff <= 0 ? "rosso" : "giallo";
-      alerts.push({
-        key: `deadline-${item.id}-${item.deadline}`,
-        status,
-        label: status === "rosso" ? "Scadenza urgente" : "Scadenza vicina",
-        title: item.text || "Scadenza",
-        message: `${item.person || ""} · ${diff <= 0 ? "Scade oggi o è già scaduta" : "Scade tra " + diff + " giorni"}`
-      });
-    }
+  const byTypeCounts = {};
+  Object.keys(TYPES).forEach(type => {
+    byTypeCounts[type] = personItems.filter(x => x.type === type).length;
   });
 
-  calendar.forEach(item => {
-    const startDiff = daysUntil(item.startDate);
-    const endDiff = daysUntil(item.endDate);
+  return `
+    <div class="person-card">
+      <h3>${escapeHtml(person)}</h3>
 
-    if (startDiff === null || endDiff === null) return;
-
-    const todayInside = startDiff <= 0 && endDiff >= 0;
-
-    if (todayInside || (startDiff >= 0 && startDiff <= 3)) {
-      const status = todayInside || startDiff === 0 ? "rosso" : "giallo";
-      alerts.push({
-        key: `calendar-${item.id}-${item.startDate}`,
-        status,
-        label: status === "rosso" ? "Impegno oggi" : "Impegno vicino",
-        title: item.text || "Impegno",
-        message: `${item.person || ""} · ${todayInside ? "In corso oggi" : "Inizia tra " + startDiff + " giorni"}`
-      });
-    }
-  });
-
-  return alerts;
-}
-
-async function requestBrowserNotifications() {
-  if (!("Notification" in window)) {
-    alert("Questo browser non supporta le notifiche.");
-    return;
-  }
-
-  const permission = await Notification.requestPermission();
-
-  if (permission === "granted") {
-    checkBrowserNotifications(true);
-    alert("Notifiche attivate.");
-  } else {
-    alert("Notifiche non abilitate.");
-  }
-
-  renderApp();
-}
-
-function checkBrowserNotifications(force) {
-  if (!("Notification" in window)) return;
-  if (Notification.permission !== "granted") return;
-
-  const deadlines = allItems.filter(x => x.type === "scadenze");
-  const calendar = allItems.filter(x => x.type === "calendario");
-  const alerts = getNotificationItems(deadlines, calendar);
-
-  if (!alerts.length) return;
-
-  const todayKey = todayDateString();
-  const saved = JSON.parse(localStorage.getItem("adaHomeNotificationsSent") || "{}");
-
-  alerts.forEach(alert => {
-    const key = `${todayKey}-${alert.key}`;
-
-    if (!saved[key] || force) {
-      new Notification("ADA Home", {
-        body: `${alert.title} - ${alert.message}`
-      });
-
-      saved[key] = true;
-    }
-  });
-
-  localStorage.setItem("adaHomeNotificationsSent", JSON.stringify(saved));
-}
-
-function getNotificationPermissionText() {
-  if (!("Notification" in window)) {
-    return "Il browser non supporta le notifiche esterne. Gli avvisi saranno visibili dentro l'app.";
-  }
-
-  if (Notification.permission === "granted") {
-    return "Notifiche browser attive. Gli avvisi compaiono anche fuori dalla pagina quando possibile.";
-  }
-
-  if (Notification.permission === "denied") {
-    return "Notifiche bloccate dal browser. Puoi riattivarle dalle impostazioni del sito.";
-  }
-
-  return "Puoi attivare le notifiche browser. Gli avvisi dentro l'app funzionano comunque.";
-}
-
-/* =========================================================
-   CALENDARIO
-========================================================= */
-
-function renderCalendarGrid(calendarItems) {
-  const year = calendarCursor.getFullYear();
-  const month = calendarCursor.getMonth();
-
-  const firstDay = new Date(year, month, 1);
-  const startOffset = mondayIndex(firstDay.getDay());
-  const gridStart = new Date(year, month, 1 - startOffset);
-
-  const monthTitle = calendarCursor.toLocaleDateString("it-IT", {
-    month: "long",
-    year: "numeric"
-  });
-
-  const dayNames = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
-
-  let html = `
-    <div class="calendar-head">
-      <button id="prevMonth">‹</button>
-      <strong>${monthTitle}</strong>
-      <button id="nextMonth">›</button>
-    </div>
-
-    <div class="calendar-grid">
-      ${dayNames.map(d => `<div class="day-name">${d}</div>`).join("")}
-  `;
-
-  for (let i = 0; i < 42; i++) {
-    const day = new Date(gridStart);
-    day.setDate(gridStart.getDate() + i);
-
-    const inMonth = day.getMonth() === month;
-    const dayEvents = calendarItems.filter(item => eventIsInDay(item, day));
-
-    html += `
-      <div class="day-cell ${inMonth ? "" : "out"}">
-        <div class="day-number">${day.getDate()}</div>
-        ${
-          dayEvents.slice(0, 3).map(ev => `
-            <span class="day-event ${getStatus(ev)}">${escapeHtml(ev.text || "Impegno")}</span>
-          `).join("")
-        }
-        ${
-          dayEvents.length > 3
-            ? `<span class="day-event giallo">+${dayEvents.length - 3}</span>`
-            : ""
-        }
+      <div class="priority-row">
+        <span class="dot rosso"></span>
+        <span>Urgenti</span>
+        <strong>${red}</strong>
       </div>
-    `;
-  }
 
-  html += `</div>`;
+      <div class="priority-row">
+        <span class="dot giallo"></span>
+        <span>Importanti</span>
+        <strong>${yellow}</strong>
+      </div>
 
-  return html;
-}
+      <div class="priority-row">
+        <span class="dot verde"></span>
+        <span>Normali</span>
+        <strong>${green}</strong>
+      </div>
 
-function eventIsInDay(item, day) {
-  if (!item.startDate || !item.endDate) return false;
-
-  const start = parseDateInput(item.startDate);
-  const end = parseDateInput(item.endDate);
-  const current = new Date(day);
-  current.setHours(0, 0, 0, 0);
-
-  return current >= start && current <= end;
-}
-
-function sortCalendar(items) {
-  return [...items].sort((a, b) => {
-    const ad = parseDateInput(a.startDate || "2999-12-31");
-    const bd = parseDateInput(b.startDate || "2999-12-31");
-    return ad - bd;
-  });
-}
-
-function mondayIndex(day) {
-  return day === 0 ? 6 : day - 1;
+      <div class="type-list">
+        ${Object.keys(byTypeCounts)
+          .filter(type => ["spesa", "faccende", "scadenze", "calendario"].includes(type))
+          .map(type => `
+            <div class="type-chip">
+              <span>${TYPES[type]}</span>
+              <strong>${byTypeCounts[type]}</strong>
+            </div>
+          `).join("")}
+      </div>
+    </div>
+  `;
 }
 
 /* =========================================================
@@ -1229,13 +935,16 @@ function renderItems(items) {
       `;
     } else if (item.type === "scadenze") {
       details = `
-        <small>${escapeHtml(item.person || "")} · Scadenza: ${formatDate(item.deadline)}</small>
+        <small>${escapeHtml(item.person || "")}</small>
+        <span class="date-range">Scadenza: ${formatDate(item.deadline)}</span>
+        <br>
         <span class="badge ${status}">${label}</span>
       `;
     } else if (item.type === "calendario") {
       details = `
-        <small>${escapeHtml(item.person || "")} · ${formatDateRange(item.startDate, item.endDate)}</small>
-        ${item.note ? `<small>Note: ${escapeHtml(item.note)}</small>` : ""}
+        <small>${escapeHtml(item.person || "")}</small>
+        <span class="date-range">${formatDate(item.startDate)} → ${formatDate(item.endDate || item.startDate)}</span>
+        ${item.note ? `<small>${escapeHtml(item.note)}</small>` : ""}
         <span class="badge ${status}">${label}</span>
       `;
     } else if (item.type === "note") {
@@ -1249,7 +958,7 @@ function renderItems(items) {
       `;
     }
 
-    const hasLight = ["spesa", "faccende", "scadenze", "calendario"].includes(item.type);
+    const hasLight = !["spese", "note"].includes(item.type);
     const light = hasLight ? `<span class="semaforo ${status}"></span>` : "";
     const lightClass = hasLight ? "with-light" : "";
 
@@ -1262,6 +971,22 @@ function renderItems(items) {
       </div>
     `;
   }).join("");
+}
+
+/* =========================================================
+   COMPONENTI HTML
+========================================================= */
+
+function tabButton(tab, label) {
+  return `
+    <button class="tab ${activeTab === tab ? "active" : ""}" data-tab="${tab}">
+      ${label}
+    </button>
+  `;
+}
+
+function panelClass(tab) {
+  return activeTab === tab ? "active" : "";
 }
 
 function personSelect(id) {
@@ -1287,49 +1012,54 @@ function prioritySelect(id) {
 ========================================================= */
 
 function getStatus(item) {
-  if (item.priority === "rosso") return "rosso";
-
   if (item.type === "scadenze") {
-    const dateStatus = deadlineStatus(item.deadline);
-
-    if (dateStatus === "rosso") return "rosso";
-    if (dateStatus === "giallo") return "giallo";
+    const auto = deadlineStatus(item.deadline);
+    if (auto === "rosso") return "rosso";
+    if (item.priority === "rosso") return "rosso";
+    if (auto === "giallo") return "giallo";
+    if (item.priority === "giallo") return "giallo";
+    return "verde";
   }
 
   if (item.type === "calendario") {
-    const calendarStatus = calendarStatusByDate(item);
-
-    if (calendarStatus === "rosso") return "rosso";
-    if (calendarStatus === "giallo") return "giallo";
+    const auto = calendarStatus(item.startDate, item.endDate);
+    if (auto === "rosso") return "rosso";
+    if (item.priority === "rosso") return "rosso";
+    if (auto === "giallo") return "giallo";
+    if (item.priority === "giallo") return "giallo";
+    return "verde";
   }
 
+  if (item.priority === "rosso") return "rosso";
   if (item.priority === "giallo") return "giallo";
-
   return "verde";
 }
 
 function deadlineStatus(deadline) {
-  const diffDays = daysUntil(deadline);
+  if (!deadline) return "verde";
 
-  if (diffDays === null) return "verde";
+  const today = startOfToday();
+  const due = parseDateLocal(deadline);
+
+  const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+
   if (diffDays <= 0) return "rosso";
   if (diffDays <= 7) return "giallo";
-
   return "verde";
 }
 
-function calendarStatusByDate(item) {
-  if (!item.startDate || !item.endDate) return "verde";
+function calendarStatus(startDate, endDate) {
+  if (!startDate) return "verde";
 
-  const startDiff = daysUntil(item.startDate);
-  const endDiff = daysUntil(item.endDate);
+  const today = startOfToday();
+  const start = parseDateLocal(startDate);
+  const end = parseDateLocal(endDate || startDate);
 
-  if (startDiff === null || endDiff === null) return "verde";
+  if (today >= start && today <= end) return "rosso";
 
-  const todayInside = startDiff <= 0 && endDiff >= 0;
+  const diffDays = Math.ceil((start - today) / (1000 * 60 * 60 * 24));
 
-  if (todayInside || startDiff === 0) return "rosso";
-  if (startDiff > 0 && startDiff <= 3) return "giallo";
+  if (diffDays >= 0 && diffDays <= 3) return "giallo";
 
   return "verde";
 }
@@ -1340,31 +1070,68 @@ function getStatusLabel(status) {
   return "Normale";
 }
 
-function getTypeLabel(type) {
-  if (type === "spesa") return "Spesa";
-  if (type === "faccende") return "Faccenda";
-  if (type === "scadenze") return "Scadenza";
-  if (type === "calendario") return "Calendario";
-  if (type === "spese") return "Spesa €";
-  if (type === "note") return "Nota";
-  return "Altro";
+function priorityWeight(status) {
+  if (status === "rosso") return 3;
+  if (status === "giallo") return 2;
+  return 1;
 }
 
-function getExtraInfo(item) {
-  if (item.type === "scadenze") {
-    return `${item.person || ""} · Scadenza: ${formatDate(item.deadline)}`;
+/* =========================================================
+   NOTIFICHE
+========================================================= */
+
+async function requestNotifications() {
+  if (!("Notification" in window)) {
+    alert("Le notifiche non sono supportate da questo browser.");
+    return;
   }
 
-  if (item.type === "calendario") {
-    return `${item.person || ""} · ${formatDateRange(item.startDate, item.endDate)}`;
-  }
+  const permission = await Notification.requestPermission();
 
-  return item.person || "";
+  if (permission === "granted") {
+    alert("Notifiche attivate.");
+    checkCalendarNotifications(true);
+  } else {
+    alert("Notifiche non autorizzate.");
+  }
 }
+
+function checkCalendarNotifications(force = false) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+
+  const calendar = byType("calendario");
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  calendar.forEach(item => {
+    const status = calendarStatus(item.startDate, item.endDate);
+    if (status !== "rosso" && !force) return;
+
+    const notificationKey = `ada_notify_${todayKey}_${item.id}`;
+
+    if (localStorage.getItem(notificationKey) && !force) return;
+
+    if (status === "rosso" || force) {
+      new Notification("ADA Home", {
+        body: `${item.person || "Famiglia"}: ${item.text || "Impegno in calendario"}`,
+      });
+
+      localStorage.setItem(notificationKey, "1");
+    }
+  });
+}
+
+setInterval(() => {
+  checkCalendarNotifications();
+}, 60000);
 
 /* =========================================================
    UTILITY
 ========================================================= */
+
+function byType(type) {
+  return allItems.filter(x => x.type === type);
+}
 
 function val(id) {
   const el = document.getElementById(id);
@@ -1373,7 +1140,6 @@ function val(id) {
 
 function formatMoney(value) {
   const n = Number(value || 0);
-
   return n.toLocaleString("it-IT", {
     style: "currency",
     currency: "EUR"
@@ -1383,21 +1149,14 @@ function formatMoney(value) {
 function formatDate(dateString) {
   if (!dateString) return "non impostata";
 
-  const d = parseDateInput(dateString);
+  const d = parseDateLocal(dateString);
   if (Number.isNaN(d.getTime())) return dateString;
 
   return d.toLocaleDateString("it-IT");
 }
 
-function formatDateRange(startDate, endDate) {
-  if (!startDate && !endDate) return "date non impostate";
-  if (startDate === endDate) return formatDate(startDate);
-
-  return `${formatDate(startDate)} → ${formatDate(endDate)}`;
-}
-
-function parseDateInput(dateString) {
-  if (!dateString) return new Date("Invalid Date");
+function parseDateLocal(dateString) {
+  if (!dateString) return new Date("");
 
   const parts = String(dateString).split("-");
   if (parts.length !== 3) return new Date(dateString);
@@ -1406,34 +1165,13 @@ function parseDateInput(dateString) {
   const month = Number(parts[1]) - 1;
   const day = Number(parts[2]);
 
-  const d = new Date(year, month, day);
-  d.setHours(0, 0, 0, 0);
-
-  return d;
+  return new Date(year, month, day);
 }
 
-function todayDateString() {
-  const d = new Date();
-
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function daysUntil(dateString) {
-  if (!dateString) return null;
-
+function startOfToday() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
-  const due = parseDateInput(dateString);
-  if (Number.isNaN(due.getTime())) return null;
-
-  const diff = due - today;
-
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  return today;
 }
 
 function escapeHtml(text) {
